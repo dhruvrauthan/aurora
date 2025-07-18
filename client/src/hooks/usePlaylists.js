@@ -61,6 +61,10 @@ export function usePlaylists(isLoggedIn, view, setView, setLowerColor, setUpperC
 	function selectPlaylist(playlist) {
 		fetchPlaylistTracks(playlist);
 	}
+	
+	function showFeedback(){
+		setView("feedback")
+	}
 
 	return {
 		handleLogin,
@@ -68,6 +72,7 @@ export function usePlaylists(isLoggedIn, view, setView, setLowerColor, setUpperC
 		playlists,
 		selectPlaylist,
 		currentPlaylistName,
-		genres
+		genres,
+		showFeedback
 	};
 }

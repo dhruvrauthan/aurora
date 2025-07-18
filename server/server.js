@@ -13,6 +13,7 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const app = express();
 app.use(cors());
+app.use(express.json());
 
 const DB_PATH = './artistGenresDB';
 const mb_db = new Level(DB_PATH, { valueEncoding: 'json' });
@@ -162,27 +163,33 @@ app.get('/playlist-tracks/:id', async (req, res) => {
     }
 });
 
+app.post("/feedback", (req, res) => {
+    const { genre, color, comments } = req.body;
+    // …store feedback…
+    res.json({ success: true });
+});
+
 /**
  * Fetches all genres for an artist from either Spotify cache or API using artist ID
  * @param {*} artistId 
  * @param {*} attempt 
  * @returns
  */
-async function fetchArtistGenresSpotify(artistId, attempt = 1) {
+async function fetchArtistGenresSpotify(track, attempt = 1) {
     // Check session cache first
-    if (artistGenreCache[artistId]) {
-        return artistGenreCache[artistId]; // Return cached genres
+    if (artistGenreCache[track.artistId]) {
+        return artistGenreCache[track.artistId]; // Return cached genres
     }
 
     // Otherwise get genre for artist using API
     try {
-        const artistResponse = await axios.get(`https://api.spotify.com/v1/artists/${artistId}`, {
+        const artistResponse = await axios.get(`https://api.spotify.com/v1/artists/${track.artistId}`, {
             headers: { Authorization: `Bearer ${access_token}` },
         });
 
         const genres = artistResponse.data.genres;
-        console.log(artistResponse.data.name + ": " + genres);
-        artistGenreCache[artistId] = genres; // Store in cache
+        console.log(artistResponse.data.name + "(Spotify API): " + genres);
+        artistGenreCache[track.artistId] = genres; // Store in cache
         return genres;
     } catch (error) {
         // Might be due to Spotify timing out request- wait and try again
@@ -191,7 +198,7 @@ async function fetchArtistGenresSpotify(artistId, attempt = 1) {
         if (attempt < MAX_RETRIES) {
             console.log(`Retrying in 30 seconds...`);
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY)); // Wait 30 seconds
-            return fetchArtistGenres(artistId, attempt + 1); // Recursive retry
+            return fetchArtistGenresSpotify(artistId, attempt + 1); // Recursive retry
         } else {
             console.log(`Failed after ${MAX_RETRIES} attempts. Skipping artist ${artistId}.`);
             return []; // Return empty array to avoid breaking genre list
@@ -202,21 +209,21 @@ async function fetchArtistGenresSpotify(artistId, attempt = 1) {
 /**
  * Fetches all genres for an artist from local MB database or cache
  * 
- * @param {*} artistName 
+ * @param {*} track 
  * @returns 
  */
-async function fetchArtistGenresMB(artistName) {
+async function fetchArtistGenresMB(track) {
     // Check session cache first
-    if (artistGenreCache[artistName]) {
-        return artistGenreCache[artistName]; // Return cached genres
+    if (artistGenreCache[track.artistId]) {
+        return artistGenreCache[track.artistId]; // Return cached genres
     }
 
-    const key = artistName.toLowerCase();
+    const key = track.artistName.toLowerCase();
 
     try {
         const genres = await mb_db.get(key);
-        artistGenreCache[artistName] = genres;
-        console.log(artistName + ": " + genres);
+        artistGenreCache[track.artistId] = genres;
+        console.log(track.artistName + "(MB): " + genres);
         return genres;
     } catch (err) {
         console.log("Error in retrieving genres\n");
@@ -228,13 +235,13 @@ async function fetchArtistGenresMB(artistName) {
 /**
  * Closes MB database on server termination
  */
-process.on('SIGINT',  () => shutdown());
+process.on('SIGINT', () => shutdown());
 process.on('SIGTERM', () => shutdown());
 
 async function shutdown() {
-  console.log('Closing LevelDB…');
-  await mb_db.close();
-  process.exit(0);
+    console.log('Closing LevelDB…');
+    await mb_db.close();
+    process.exit(0);
 }
 
 /**
@@ -244,15 +251,20 @@ async function shutdown() {
  */
 async function getGenres(tracks) {
     let genresList = [];
+    console.log("Getting artist genres");
 
     for (const track of tracks) {
         if (track.artistId) {
             // const genres = await fetchArtistGenresSpotify(track.artistId);
 
-            const genres = await fetchArtistGenresMB(track.artistName);
+            const genres = await fetchArtistGenresMB(track);
 
-            if(Array.isArray(genres))
+            if (Array.isArray(genres)) {
                 genresList.push(...genres);
+            } else {
+                const spotifyGenres = await fetchArtistGenresSpotify(track);
+                genresList.push(...spotifyGenres);
+            }
         }
     }
 

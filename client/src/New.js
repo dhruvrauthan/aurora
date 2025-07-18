@@ -6,6 +6,8 @@ import { useShaders } from "./hooks/useShaders"
 import { usePhaseHue } from "./hooks/usePhaseHue"
 import { usePlaylists } from "./hooks/usePlaylists"
 import { useStats } from "./hooks/useStats";
+import { useFeedback } from "./hooks/useFeedback";
+import FeedbackForm from "./components/FeedbackForm";
 
 export default function New() {
 	const isLoggedIn = new URLSearchParams(window.location.search).get("loggedIn") === "true";
@@ -20,9 +22,19 @@ export default function New() {
 		playlists,
 		selectPlaylist,
 		currentPlaylistName,
-		genres
+		genres,
+		showFeedback
 	} = usePlaylists(isLoggedIn, view, setView, setLowerColor, setUpperColor);
 	const { toggleStats } = useStats(view, setView);
+	const { GENRE_OPTIONS,
+		selections,
+		comments,
+		error,
+		loading,
+		handleColorChange,
+		setComments,
+		handleSubmit,
+		handleCancel } = useFeedback(setView);
 
 	return (
 		<div style={styles.container}>
@@ -45,6 +57,7 @@ export default function New() {
 					selectPlaylist(pl);
 				}}
 				view={view}
+				showFeedback={showFeedback}
 			/>
 
 			<div style={styles.playlistLabel}>
@@ -55,6 +68,19 @@ export default function New() {
 				genres={genres}
 				view={view}
 				toggleStats={toggleStats}
+			/>
+
+			<FeedbackForm
+			GENRE_OPTIONS={GENRE_OPTIONS}
+			selections={selections}
+				comments={comments}
+				error={error}
+				loading={loading}
+				handleSubmit={handleSubmit}
+				handleCancel={handleCancel}
+				handleColorChange={handleColorChange}
+				setComments={setComments}
+				view={view}
 			/>
 		</div>
 	)

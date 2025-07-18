@@ -8,7 +8,8 @@ export default function PlaylistMenu({
 	showPlaylists,
 	playlists,
 	selectPlaylist,
-	view
+	view,
+	showFeedback
 }) {
 	return (
 		<>
@@ -22,23 +23,29 @@ export default function PlaylistMenu({
 
 			{!showLogin && view == "playlists" && (
 				<div style={styles.playlistBox}>
-				<h2 style={styles.playlistTitle}>Your Playlists</h2>
-				<div style={styles.playlistList}>
-				  {playlists.length > 0 ? (
-					playlists.map((pl) => (
-					  <div
-						key={pl.id}
-						style={styles.playlistItem}
-						onClick={() => selectPlaylist(pl)}
-					  >
-						{pl.name}
-					  </div>
-					))
-				  ) : (
-					<p style={styles.noPlaylists}>No playlists available.</p>
-				  )}
+					<h2 style={styles.playlistTitle}>Your Playlists</h2>
+					<div style={styles.playlistList}>
+						{playlists.length > 0 ? (
+							playlists.map((pl) => (
+								<div
+									key={pl.id}
+									style={styles.playlistItem}
+									onClick={() => selectPlaylist(pl)}
+								>
+									{pl.name}
+								</div>
+							))
+						) : (
+							<p style={styles.noPlaylists}>No playlists available.</p>
+						)}
+					</div>
+					<button
+						style={styles.feedbackButton}
+						onClick={() => showFeedback()}
+					>
+						Help improve this website!
+					</button>
 				</div>
-			  </div>
 			)}
 		</>
 	)
@@ -80,9 +87,10 @@ const styles = {
 		backgroundColor: "#222222", // Dark background for the box
 		borderRadius: "10px",
 		padding: "20px",
-		overflowY: "auto",
 		boxShadow: "0 4px 6px rgba(0, 0, 0, 0.5)",
 		zIndex: 2,
+		display: "flex",
+		flexDirection: "column",
 	},
 	playlistTitle: {
 		margin: "0 0 10px 0",
@@ -94,6 +102,8 @@ const styles = {
 		display: "flex",
 		flexDirection: "column",
 		gap: "10px",
+		flex: 1,
+		overflowY: "auto",
 	},
 	playlistItem: {
 		padding: "12px",
@@ -108,5 +118,17 @@ const styles = {
 	noPlaylists: {
 		textAlign: "center",
 		color: "#bbbbbb", // Light gray for empty state
+	},
+	feedbackButton: {
+		marginTop: "20px",
+		width: "100%",
+		padding: "12px",
+		backgroundColor: "#1DB954",  // or any accent color
+		color: "#fff",
+		border: "none",
+		borderRadius: "5px",
+		cursor: "pointer",
+		fontSize: "16px",
+		textAlign: "center",
 	},
 }
